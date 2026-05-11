@@ -1,0 +1,38 @@
+name: Destroy — dotst2
+
+on:
+  workflow_dispatch:
+
+env:
+  ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node24
+  ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node24
+
+jobs:
+  destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform init
+        working-directory: terraform
+        run: |
+          terraform init -reconfigure \
+            -backend-config="bucket=${{ secrets.TF_STATE_SPACE }}" \
+            -backend-config="key=${{ secrets.PROJECT_NAME }}.tfstate" \
+            -backend-config="region=${{ secrets.DO_REGION }}" \
+            -backend-config="endpoint=https://${{ secrets.DO_REGION }}.digitaloceanspaces.com" \
+            -backend-config="access_key=${{ secrets.SPACES_ACCESS_KEY }}" \
+            -backend-config="secret_key=${{ secrets.SPACES_SECRET_KEY }}" \
+            -backend-config="skip_credentials_validation=true" \
+            -backend-config="skip_metadata_api_check=true" \
+            -backend-config="skip_region_validation=true" \
+            -backend-config="use_path_style=true"
+      - name: Terraform destroy
+        working-directory: terraform
+        run: |
+          terraform destroy -auto-approve \
+            -var="do_token=${{ secrets.DO_TOKEN }}" \
+            -var="project_name=${{ secrets.PROJECT_NAME }}" \
+            -var="do_region=${{ secrets.DO_REGION }}" \
+            -var="public_key=${{ secrets.SSH_PUBLIC_KEY }}"
